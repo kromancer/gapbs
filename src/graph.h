@@ -190,7 +190,7 @@ class CSRGraph {
     return directed_;
   }
 
-  int64_t num_nodes() const {
+  uint64_t num_nodes() const {
     return num_nodes_;
   }
 
@@ -264,8 +264,8 @@ class CSRGraph {
 
  private:
   bool directed_;
-  int64_t num_nodes_;
-  int64_t num_edges_;
+  uint64_t num_nodes_;
+  uint64_t num_edges_;
   DestID_** out_index_;
   DestID_*  out_neighbors_;
   DestID_** in_index_;
