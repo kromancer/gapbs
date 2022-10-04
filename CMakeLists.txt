@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.22)
+
+project(gapbs LANGUAGES CXX)
+
+add_executable(pr src/pr.cc)
+target_compile_options(pr PRIVATE "-std=c++17" "-ggdb3" "-O0")
