@@ -245,14 +245,18 @@ int main(int argc, char* argv[]) {
   CLApp cli(argc, argv, "breadth-first search");
   if (!cli.ParseArgs())
     return -1;
+
   Builder b(cli);
   Graph g = b.MakeGraph();
+
   SourcePicker<Graph> sp(g, cli.start_vertex());
-  auto BFSBound = [&sp] (const Graph &g) { return DOBFS(g, sp.PickNext()); };
+  auto BFSBound = [&sp](const Graph &g_) { return DOBFS(g_, sp.PickNext()); };
+
   SourcePicker<Graph> vsp(g, cli.start_vertex());
-  auto VerifierBound = [&vsp] (const Graph &g, const pvector<NodeID> &parent) {
-    return BFSVerifier(g, vsp.PickNext(), parent);
+  auto VerifierBound = [&vsp](const Graph &g_, const pvector<NodeID> &parent) {
+    return BFSVerifier(g_, vsp.PickNext(), parent);
   };
+
   BenchmarkKernel(cli, g, BFSBound, PrintBFSStats, VerifierBound);
   return 0;
 }
