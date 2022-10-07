@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "types.h"
 #include "builder.h"
 #include "graph.h"
 #include "timer.h"
@@ -28,7 +29,7 @@ Various helper functions to ease writing of kernels
 
 
 // Default type signatures for commonly used types
-typedef uint64_t NodeID;
+
 typedef int32_t WeightT;
 typedef NodeWeight<NodeID, WeightT> WNode;
 
@@ -46,12 +47,12 @@ typedef WriterBase<NodeID, WNode> WeightedWriter;
 template<typename GraphT_>
 class SourcePicker {
  public:
-  explicit SourcePicker(const GraphT_ &g, NodeID given_source = -1)
-      : given_source(given_source), rng(kRandSeed), udist(0, g.num_nodes()-1),
+  explicit SourcePicker(const GraphT_ &g, NodeID given_source_ = INVALID_NODE_ID)
+      : given_source(given_source_), rng(kRandSeed), udist(0, g.num_nodes() - 1),
         g_(g) {}
 
   NodeID PickNext() {
-    if (given_source != -1)
+    if (given_source != INVALID_NODE_ID)
       return given_source;
     NodeID source;
     do {

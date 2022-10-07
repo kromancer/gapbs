@@ -72,7 +72,7 @@ class BuilderBase {
     for (auto it = el.begin(); it < el.end(); it++) {
       Edge e = *it;
       max_seen = std::max(max_seen, e.u);
-      max_seen = std::max(max_seen, (NodeID_) e.v);
+      max_seen = std::max(max_seen, e.v);
     }
     return max_seen;
   }
@@ -85,7 +85,7 @@ class BuilderBase {
       if (symmetrize_ || (!symmetrize_ && !transpose))
         fetch_and_add(degrees[e.u], 1);
       if ((symmetrize_ && !in_place_) || (!symmetrize_ && transpose))
-        fetch_and_add(degrees[(NodeID_) e.v], 1);
+        fetch_and_add(degrees[e.v], 1);
     }
     return degrees;
   }

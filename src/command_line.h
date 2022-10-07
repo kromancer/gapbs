@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "types.h"
 
 /*
 GAP Benchmark Suite
@@ -114,7 +115,7 @@ class CLBase {
 class CLApp : public CLBase {
   bool do_analysis_ = false;
   int num_trials_ = 16;
-  int64_t start_vertex_ = -1;
+  NodeID start_vertex_ = INVALID_NODE_ID;
   bool do_verify_ = false;
 
  public:
@@ -138,7 +139,7 @@ class CLApp : public CLBase {
 
   bool do_analysis() const { return do_analysis_; }
   int num_trials() const { return num_trials_; }
-  int64_t start_vertex() const { return start_vertex_; }
+  NodeID start_vertex() const { return start_vertex_; }
   bool do_verify() const { return do_verify_; }
 };
 

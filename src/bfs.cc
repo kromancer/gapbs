@@ -13,7 +13,7 @@
 #include "pvector.h"
 #include "sliding_queue.h"
 #include "timer.h"
-
+#include "types.h"
 
 /*
 GAP Benchmark Suite
@@ -209,7 +209,7 @@ bool BFSVerifier(const Graph &g, NodeID source,
     }
   }
   for (NodeID u : g.vertices()) {
-    if ((depth[u] != -1) && (parent[u] != -1)) {
+    if ((depth[u] != -1) && (parent[u] != INVALID_NODE_ID)) {
       if (u == source) {
         if (!((parent[u] == u) && (depth[u] == 0))) {
           cout << "Source wrong" << endl;
