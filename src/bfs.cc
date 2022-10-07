@@ -186,62 +186,76 @@ void PrintBFSStats(const Graph &g, const pvector<NodeID> &bfs_tree) {
   cout << n_edges << " edges" << endl;
 }
 
-
 // BFS verifier does a serial BFS from same source and asserts:
 // - parent[source] = source
 // - parent[v] = u  =>  depth[v] = depth[u] + 1 (except for source)
 // - parent[v] = u  => there is edge from u to v
 // - all vertices reachable from source have a parent
-bool BFSVerifier(const Graph &g, NodeID source,
-                 const pvector<NodeID> &parent) {
-  pvector<int> depth(g.num_nodes(), -1);
+bool BFSVerifier(const Graph &g, NodeID source, const pvector<NodeID> &parent) {
+  const int NODE_UNREACHABLE = -1;
+  pvector<int> depth(g.num_nodes(), NODE_UNREACHABLE);
   depth[source] = 0;
+
   vector<NodeID> to_visit;
   to_visit.reserve(g.num_nodes());
   to_visit.push_back(source);
+
   for (auto it = to_visit.begin(); it != to_visit.end(); it++) {
     NodeID u = *it;
     for (NodeID v : g.out_neigh(u)) {
-      if (depth[v] == -1) {
+      if (depth[v] == NODE_UNREACHABLE) {
         depth[v] = depth[u] + 1;
         to_visit.push_back(v);
       }
     }
   }
+
   for (NodeID u : g.vertices()) {
-    if ((depth[u] != -1) && (parent[u] != INVALID_NODE_ID)) {
-      if (u == source) {
-        if (!((parent[u] == u) && (depth[u] == 0))) {
-          cout << "Source wrong" << endl;
-          return false;
-        }
-        continue;
-      }
-      bool parent_found = false;
-      for (NodeID v : g.in_neigh(u)) {
-        if (v == parent[u]) {
-          if (depth[v] != depth[u] - 1) {
-            cout << "Wrong depths for " << u << " & " << v << endl;
-            return false;
-          }
-          parent_found = true;
-          break;
-        }
-      }
-      if (!parent_found) {
-        cout << "Couldn't find edge from " << parent[u] << " to " << u << endl;
+    if (u == source) {
+      if (!((parent[u] == u) && (depth[u] == 0))) {
+        cout << "Source wrong" << endl;
         return false;
       }
-    } else if (depth[u] != parent[u]) {
-      cout << "Reachability mismatch" << endl;
+
+      continue;
+    }
+
+    if (depth[u] == NODE_UNREACHABLE ) {
+      if (parent[u] != INVALID_NODE_ID) {
+        cout << "Reachability mismatch" << endl;
+        return false;
+      }
+
+      continue;
+    }
+
+    if (parent[u] == INVALID_NODE_ID) {
+      cout << "Node " << u << "is reachable " << "but parent is invalid" << endl;
+      return false;
+    }
+
+    bool parent_found = false;
+    for (NodeID v : g.in_neigh(u)) {
+      if (v == parent[u]) {
+        if (depth[v] != depth[u] - 1) {
+          cout << "Wrong depths for " << u << " & " << v << endl;
+          return false;
+        }
+        parent_found = true;
+        break;
+      }
+    }
+
+    if (!parent_found) {
+      cout << "Couldn't find edge from " << parent[u] << " to " << u << endl;
       return false;
     }
   }
+
   return true;
 }
 
-
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   CLApp cli(argc, argv, "breadth-first search");
   if (!cli.ParseArgs())
     return -1;
