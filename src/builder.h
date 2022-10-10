@@ -5,6 +5,7 @@
 #define BUILDER_H_
 
 #include <algorithm>
+#include <cassert>
 #include <cinttypes>
 #include <fstream>
 #include <functional>
@@ -102,37 +103,42 @@ class BuilderBase {
     return sums;
   }
 
-  static
-  pvector<SGOffset> ParallelPrefixSum(const pvector<NodeID_> &degrees) {
-    const size_t block_size = 1<<20;
+  // The prefix sum of nodes' degree is also known as the offset list
+  static pvector<SGOffset> ParallelPrefixSum(const pvector<NodeID_> &degrees) {
+
+    const size_t block_size = 1 << 20;
     const size_t num_blocks = (degrees.size() + block_size - 1) / block_size;
     pvector<SGOffset> local_sums(num_blocks);
-    #pragma omp parallel for
-    for (size_t block=0; block < num_blocks; block++) {
+
+#pragma omp parallel for
+    for (size_t block = 0; block < num_blocks; block++) {
       SGOffset lsum = 0;
       size_t block_end = std::min((block + 1) * block_size, degrees.size());
-      for (size_t i=block * block_size; i < block_end; i++)
+      for (size_t i = block * block_size; i < block_end; i++)
         lsum += degrees[i];
       local_sums[block] = lsum;
     }
-    pvector<SGOffset> bulk_prefix(num_blocks+1);
+
+    pvector<SGOffset> bulk_prefix(num_blocks + 1);
     SGOffset total = 0;
-    for (size_t block=0; block < num_blocks; block++) {
+    for (size_t block = 0; block < num_blocks; block++) {
       bulk_prefix[block] = total;
       total += local_sums[block];
     }
     bulk_prefix[num_blocks] = total;
+
     pvector<SGOffset> prefix(degrees.size() + 1);
-    #pragma omp parallel for
-    for (size_t block=0; block < num_blocks; block++) {
+#pragma omp parallel for
+    for (size_t block = 0; block < num_blocks; block++) {
       SGOffset local_total = bulk_prefix[block];
       size_t block_end = std::min((block + 1) * block_size, degrees.size());
-      for (size_t i=block * block_size; i < block_end; i++) {
+      for (size_t i = block * block_size; i < block_end; i++) {
         prefix[i] = local_total;
         local_total += degrees[i];
       }
     }
     prefix[degrees.size()] = bulk_prefix[num_blocks];
+
     return prefix;
   }
 
@@ -140,7 +146,7 @@ class BuilderBase {
   // Side effect: neighbor IDs will be sorted
   void SquishCSR(const CSRGraph<NodeID_, DestID_, invert> &g, bool transpose,
                  DestID_*** sq_index, DestID_** sq_neighs) {
-    pvector<NodeID_> diffs(g.num_nodes());
+    pvector<NodeID_> degree(g.num_nodes());
     DestID_ *n_start, *n_end;
     #pragma omp parallel for private(n_start, n_end)
     for (NodeID_ n=0; n < g.num_nodes(); n++) {
@@ -151,12 +157,16 @@ class BuilderBase {
         n_start = g.out_neigh(n).begin();
         n_end = g.out_neigh(n).end();
       }
+
       std::sort(n_start, n_end);
+
       DestID_ *new_end = std::unique(n_start, n_end);
       new_end = std::remove(n_start, new_end, n);
-      diffs[n] = new_end - n_start;
+
+      degree[n] = new_end - n_start;
     }
-    pvector<SGOffset> sq_offsets = ParallelPrefixSum(diffs);
+
+    pvector<SGOffset> sq_offsets = ParallelPrefixSum(degree);
     *sq_neighs = new DestID_[sq_offsets[g.num_nodes()]];
     *sq_index = CSRGraph<NodeID_, DestID_>::GenIndex(sq_offsets, *sq_neighs);
     #pragma omp parallel for private(n_start)
@@ -165,7 +175,7 @@ class BuilderBase {
         n_start = g.in_neigh(n).begin();
       else
         n_start = g.out_neigh(n).begin();
-      std::copy(n_start, n_start+diffs[n], (*sq_index)[n]);
+      std::copy(n_start, n_start+degree[n], (*sq_index)[n]);
     }
   }
 
@@ -300,8 +310,11 @@ class BuilderBase {
                DestID_** neighs) {
     pvector<NodeID_> degrees = CountDegrees(el, transpose);
     pvector<SGOffset> offsets = ParallelPrefixSum(degrees);
-    *neighs = new DestID_[offsets[num_nodes_]];
+
+    assert(offsets[num_nodes_] == el.size());
+    *neighs = new DestID_[el.size()];
     *index = CSRGraph<NodeID_, DestID_>::GenIndex(offsets, *neighs);
+
     #pragma omp parallel for
     for (auto it = el.begin(); it < el.end(); it++) {
       Edge e = *it;
