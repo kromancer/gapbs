@@ -1,0 +1,3 @@
+[submodule "datasets/law"]
+	path = datasets/law
+	url = git@github.com:kromancer/law.git
