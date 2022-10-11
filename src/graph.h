@@ -131,18 +131,18 @@ class CSRGraph {
 
 
  public:
-  CSRGraph() : directed_(false), num_nodes_(-1), num_edges_(-1),
+  CSRGraph() : directed_(false), num_nodes_(0), num_edges_(0),
     out_index_(nullptr), out_neighbors_(nullptr),
     in_index_(nullptr), in_neighbors_(nullptr) {}
 
-  CSRGraph(int64_t num_nodes, DestID_** index, DestID_* neighs) :
+  CSRGraph(size_t num_nodes, DestID_** index, DestID_* neighs) :
     directed_(false), num_nodes_(num_nodes),
     out_index_(index), out_neighbors_(neighs),
     in_index_(index), in_neighbors_(neighs) {
       num_edges_ = (out_index_[num_nodes_] - out_index_[0]) / 2;
     }
 
-  CSRGraph(int64_t num_nodes, DestID_** out_index, DestID_* out_neighs,
+  CSRGraph(size_t num_nodes, DestID_** out_index, DestID_* out_neighs,
         DestID_** in_index, DestID_* in_neighs) :
     directed_(true), num_nodes_(num_nodes),
     out_index_(out_index), out_neighbors_(out_neighs),
@@ -154,8 +154,8 @@ class CSRGraph {
     num_nodes_(other.num_nodes_), num_edges_(other.num_edges_),
     out_index_(other.out_index_), out_neighbors_(other.out_neighbors_),
     in_index_(other.in_index_), in_neighbors_(other.in_neighbors_) {
-      other.num_edges_ = -1;
-      other.num_nodes_ = -1;
+      other.num_edges_ = 0;
+      other.num_nodes_ = 0;
       other.out_index_ = nullptr;
       other.out_neighbors_ = nullptr;
       other.in_index_ = nullptr;
@@ -176,8 +176,8 @@ class CSRGraph {
       out_neighbors_ = other.out_neighbors_;
       in_index_ = other.in_index_;
       in_neighbors_ = other.in_neighbors_;
-      other.num_edges_ = -1;
-      other.num_nodes_ = -1;
+      other.num_edges_ = 0;
+      other.num_nodes_ = 0;
       other.out_index_ = nullptr;
       other.out_neighbors_ = nullptr;
       other.in_index_ = nullptr;
@@ -264,8 +264,8 @@ class CSRGraph {
 
  private:
   bool directed_;
-  uint64_t num_nodes_;
-  uint64_t num_edges_;
+  size_t num_nodes_;
+  size_t num_edges_;
   DestID_** out_index_;
   DestID_*  out_neighbors_;
   DestID_** in_index_;
