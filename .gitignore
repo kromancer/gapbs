@@ -17,3 +17,5 @@ benchmark/graphs/raw/*
 
 .cache/
 build/
+
+.lldbinit

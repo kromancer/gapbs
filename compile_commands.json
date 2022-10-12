@@ -8,5 +8,10 @@
   "directory": "/Users/ioanniss/gapbs/build",
   "command": "/opt/homebrew/opt/llvm/bin/clang++ -Weverything -Wno-c++98-compat -Wno-missing-prototypes -fopenmp -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX12.3.sdk -std=c++17 -ggdb3 -O0 -o CMakeFiles/bfs.dir/src/bfs.cc.o -c /Users/ioanniss/gapbs/src/bfs.cc",
   "file": "/Users/ioanniss/gapbs/src/bfs.cc"
+},
+{
+  "directory": "/Users/ioanniss/gapbs/build",
+  "command": "/opt/homebrew/opt/llvm/bin/clang++ -Weverything -Wno-c++98-compat -Wno-missing-prototypes -fopenmp -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX12.3.sdk -std=c++17 -ggdb3 -O0 -o CMakeFiles/naive_bfs.dir/src/naive_bfs.cc.o -c /Users/ioanniss/gapbs/src/naive_bfs.cc",
+  "file": "/Users/ioanniss/gapbs/src/naive_bfs.cc"
 }
 ]
