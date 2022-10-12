@@ -25,7 +25,6 @@ pvector<NodeID> DOBFS(const Graph &g, NodeID source) {
 
   while (!frontier.empty()) {
     auto u = frontier.front(); frontier.pop();
-    cout << "Frontier tip: " << u << endl;
     for (auto v : g.out_neigh(u)) {
       if (parent[v] == INVALID_NODE_ID) {
         parent[v] = u;
