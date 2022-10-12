@@ -44,19 +44,12 @@ class BuilderBase {
   const CLBase &cli_;
   bool symmetrize_;
   bool needs_weights_;
-  bool in_place_ = false;
   int64_t num_nodes_ = -1;
 
  public:
   explicit BuilderBase(const CLBase &cli) : cli_(cli) {
     symmetrize_ = cli_.symmetrize();
     needs_weights_ = !std::is_same<NodeID_, DestID_>::value;
-    in_place_ = cli_.in_place();
-    if (in_place_ && needs_weights_) {
-      std::cout << "In-place building (-m) does not support weighted graphs"
-                << std::endl;
-      exit(-30);
-    }
   }
 
   DestID_ GetSource(EdgePair<NodeID_, NodeID_> e) {
@@ -85,7 +78,7 @@ class BuilderBase {
       Edge e = *it;
       if (symmetrize_ || (!symmetrize_ && !transpose))
         fetch_and_add(degrees[e.u], 1);
-      if ((symmetrize_ && !in_place_) || (!symmetrize_ && transpose))
+      if ((symmetrize_) || (!symmetrize_ && transpose))
         fetch_and_add(degrees[e.v], 1);
     }
     return degrees;
@@ -140,59 +133,6 @@ class BuilderBase {
     prefix[degrees.size()] = bulk_prefix[num_blocks];
 
     return prefix;
-  }
-
-  // Removes self-loops and redundant edges
-  // Side effect: neighbor IDs will be sorted
-  void SquishCSR(const CSRGraph<NodeID_, DestID_, invert> &g, bool transpose,
-                 DestID_*** sq_index, DestID_** sq_neighs) {
-    pvector<NodeID_> degree(g.num_nodes());
-    DestID_ *n_start, *n_end;
-    #pragma omp parallel for private(n_start, n_end)
-    for (NodeID_ n=0; n < g.num_nodes(); n++) {
-      if (transpose) {
-        n_start = g.in_neigh(n).begin();
-        n_end = g.in_neigh(n).end();
-      } else {
-        n_start = g.out_neigh(n).begin();
-        n_end = g.out_neigh(n).end();
-      }
-
-      std::sort(n_start, n_end);
-
-      DestID_ *new_end = std::unique(n_start, n_end);
-      new_end = std::remove(n_start, new_end, n);
-
-      degree[n] = new_end - n_start;
-    }
-
-    pvector<SGOffset> sq_offsets = ParallelPrefixSum(degree);
-    *sq_neighs = new DestID_[sq_offsets[g.num_nodes()]];
-    *sq_index = CSRGraph<NodeID_, DestID_>::GenIndex(sq_offsets, *sq_neighs);
-    #pragma omp parallel for private(n_start)
-    for (NodeID_ n=0; n < g.num_nodes(); n++) {
-      if (transpose)
-        n_start = g.in_neigh(n).begin();
-      else
-        n_start = g.out_neigh(n).begin();
-      std::copy(n_start, n_start+degree[n], (*sq_index)[n]);
-    }
-  }
-
-  CSRGraph<NodeID_, DestID_, invert> SquishGraph(
-      const CSRGraph<NodeID_, DestID_, invert> &g) {
-    DestID_ **out_index, *out_neighs, **in_index, *in_neighs;
-    SquishCSR(g, false, &out_index, &out_neighs);
-    if (g.directed()) {
-      if (invert)
-        SquishCSR(g, true, &in_index, &in_neighs);
-      return CSRGraph<NodeID_, DestID_, invert>(g.num_nodes(), out_index,
-                                                out_neighs, in_index,
-                                                in_neighs);
-    } else {
-      return CSRGraph<NodeID_, DestID_, invert>(g.num_nodes(), out_index,
-                                                out_neighs);
-    }
   }
 
   /*
@@ -331,18 +271,17 @@ class BuilderBase {
     DestID_ *neighs = nullptr, *inv_neighs = nullptr;
     Timer t;
     t.Start();
+
     if (num_nodes_ == -1)
       num_nodes_ = FindMaxNodeID(el)+1;
+
     if (needs_weights_)
       Generator<NodeID_, DestID_, WeightT_>::InsertWeights(el);
-    if (in_place_) {
-      MakeCSRInPlace(el, &index, &neighs, &inv_index, &inv_neighs);
-    } else {
-      MakeCSR(el, false, &index, &neighs);
-      if (!symmetrize_ && invert) {
+
+    MakeCSR(el, false, &index, &neighs);
+    if (!symmetrize_ && invert)
         MakeCSR(el, true, &inv_index, &inv_neighs);
-      }
-    }
+
     t.Stop();
     PrintTime("Build Time", t.Seconds());
     if (symmetrize_)
@@ -369,10 +308,8 @@ class BuilderBase {
       }
       g = MakeGraphFromEL(el);
     }
-    if (in_place_)
-      return g;
-    else
-      return SquishGraph(g);
+
+    return g;
   }
 
   // Relabels (and rebuilds) graph by order of decreasing degree

@@ -64,7 +64,6 @@ class CLBase {
     AddHelpLine('u', "scale", "generate 2^scale uniform-random graph");
     AddHelpLine('k', "degree", "average degree for synthetic graph",
                 std::to_string(degree_));
-    AddHelpLine('m', "", "reduces memory usage during graph building", "false");
   }
 
   bool ParseArgs() {
@@ -90,7 +89,6 @@ class CLBase {
       case 'k': degree_ = atoi(opt_arg);                    break;
       case 's': symmetrize_ = true;                         break;
       case 'u': uniform_ = true; scale_ = atoi(opt_arg);    break;
-      case 'm': in_place_ = true;                           break;
     }
   }
 
