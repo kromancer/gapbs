@@ -1,3 +1,6 @@
 [submodule "datasets/law"]
 	path = datasets/law
 	url = git@github.com:kromancer/law.git
+[submodule "ChampSim"]
+	path = ChampSim
+	url = git@github.com:kromancer/ChampSim.git

@@ -5,6 +5,7 @@
 #include "benchmark.h"
 #include "bitmap.h"
 #include "builder.h"
+#include "champsim_adapter.h"
 #include "command_line.h"
 #include "graph.h"
 #include "platform_atomics.h"
@@ -13,13 +14,19 @@
 #include "timer.h"
 #include "types.h"
 
+#include "champsim_adapter.h"
+
 using namespace std;
 
 pvector<NodeID> DOBFS(const Graph &g, NodeID source) {
 
+  initializeL1DCache();
+
+  // TODO: We are not monitoring frontier accesses
   queue<NodeID> frontier;
   frontier.push(source);
 
+  // TODO: We are not monitoring parent accesses
   pvector<NodeID> parent(g.num_nodes(), INVALID_NODE_ID);
   parent[source] = source;
 
@@ -33,8 +40,8 @@ pvector<NodeID> DOBFS(const Graph &g, NodeID source) {
     }
   }
 
-  cout << "offset_accesses: " << offset_accesses << endl;
-  cout << "neighs_accesses: " << neighs_accesses << endl;
+  deinitL1DCache();
+  printCacheStats();
 
   return parent;
 }
@@ -88,5 +95,6 @@ int main(int argc, char *argv[]) {
   };
 
   BenchmarkKernel(cli, g, BFSBound, PrintBFSStats, VerifierBound);
+
   return 0;
 }

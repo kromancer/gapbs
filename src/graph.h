@@ -9,12 +9,14 @@
 #include <cinttypes>
 #include <cstddef>
 #include <iostream>
+#include <stdint.h>
 #include <type_traits>
 
 #include "pvector.h"
 #include "types.h"
 #include "util.h"
 
+#include "champsim_adapter.h"
 
 /*
 GAP Benchmark Suite
@@ -95,9 +97,6 @@ typedef int32_t SGID;
 typedef EdgePair<SGID> SGEdge;
 typedef int64_t SGOffset;
 
-static size_t offset_accesses = 0;
-static size_t neighs_accesses = 0;
-
 // Used for instrumenting memory accesses to the offset and neighbor arrays
 class MonitoredMemAccess {
   typedef NodeID value_type;
@@ -132,11 +131,6 @@ public:
     return a.index_ == b.index_;
   }
 
-  NodeID operator*() {
-    neighs_accesses++;
-    return *index_;
-  }
-
   NodeID* operator->() {
     return index_;
   }
@@ -151,13 +145,28 @@ public:
     return *this;
   }
 
+  /** @brief The neighborhood of a vertex n lies between [ `offsets_[n]`, `offsets_[n + 1]` )
+             Stimulate the mem hierarchy with a cpu core LOAD operations for the \b lower bound.
+  */
   MonitoredMemAccess begin() {
+    load(reinterpret_cast<uint64_t>(offsets_[n_]));
     return MonitoredMemAccess(n_, offsets_);
   }
 
+  /** @brief The neighborhood of a vertex n lies between [ `offsets_[n]`, `offsets_[n + 1]` )
+             Stimulate the mem hierarchy with a cpu core LOAD operations for the \b upper bound.
+  */
   MonitoredMemAccess end() {
-    offset_accesses += 2;
+    load(reinterpret_cast<uint64_t>(offsets_[n_ + 1]));
     return MonitoredMemAccess(n_, offsets_, static_cast<size_t>(offsets_[n_ + 1] - offsets_[n_]));
+  }
+
+  /** @brief Overload of the dereference operator for a neighborhood iterator.
+             Stimulate the mem hierarchy with a cpu core LOAD operation.
+   */
+  NodeID operator*() {
+    load(reinterpret_cast<uint64_t>(index_));
+    return *index_;
   }
 };
 
