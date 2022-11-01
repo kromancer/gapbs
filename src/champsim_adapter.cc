@@ -62,7 +62,6 @@ void initializeL1DCache() {
   std::fill_n(warmup_complete, sizeof(warmup_complete) / sizeof(warmup_complete[0]), 1);
 
   dummyMem = new DummyMemoryRequestConsumer();
-
   L1D = new CACHE(
     "L1D", // NAME
     1.0, // freq_scale
@@ -81,12 +80,13 @@ void initializeL1DCache() {
     0, // pref_load
     1, // wq_full_addr
     0, // va_pref
-    5, // pref_act_mask
+    0, // pref_act_mask
     dummyMem, // ll (MemoryRequestconsumer*)
-    CACHE::pref_t::pprefetcherDno, // pref
+    CACHE::pref_t::pprefetcherDerebus,
     CACHE::repl_t::rreplacementDlru); // repl
 
   L1D->impl_replacement_initialize();
+  L1D->impl_prefetcher_initialize();
 }
 
 void load(uint64_t addr) {
