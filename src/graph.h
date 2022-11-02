@@ -5,18 +5,14 @@
 #define GRAPH_H_
 
 #include <algorithm>
-#include <cassert>
 #include <cinttypes>
 #include <cstddef>
 #include <iostream>
-#include <stdint.h>
 #include <type_traits>
 
 #include "pvector.h"
-#include "types.h"
 #include "util.h"
 
-#include "champsim_adapter.h"
 
 /*
 GAP Benchmark Suite
@@ -97,81 +93,28 @@ typedef int32_t SGID;
 typedef EdgePair<SGID> SGEdge;
 typedef int64_t SGOffset;
 
-// Used for instrumenting memory accesses to the offset and neighbor arrays
-class MonitoredMemAccess {
-  typedef NodeID value_type;
 
-private:
-  NodeID n_;
-  NodeID **offsets_;
-  NodeID *index_;
-public:
-  MonitoredMemAccess(NodeID n, NodeID **offsets, size_t start_from = 0):
-    n_(n), offsets_(offsets), index_(offsets[n]) {
-
-    ptrdiff_t max_span_ = offsets[n_ + 1] - offsets[n_];
-    assert(max_span_ >= 0);
-    size_t max_span = static_cast<size_t>(max_span_);
-
-    index_ += start_from > max_span ? max_span : start_from;
-  }
-
-  long operator-(const MonitoredMemAccess& other) {
-    assert(other.offsets_ ==  offsets_);
-    return other.index_ - index_;
-  }
-
-  friend bool operator!=(const MonitoredMemAccess& a, const MonitoredMemAccess& b) {
-    assert(a.offsets_ ==  b.offsets_);
-    return a.index_ != b.index_;
-  }
-
-  friend bool operator==(const MonitoredMemAccess& a, const MonitoredMemAccess& b) {
-    assert(a.offsets_ ==  b.offsets_);
-    return a.index_ == b.index_;
-  }
-
-  NodeID* operator->() {
-    return index_;
-  }
-
-  MonitoredMemAccess& operator+(size_t incr) {
-    index_ += incr;
-    return *this;
-  }
-
-  MonitoredMemAccess& operator++() {
-    index_++;
-    return *this;
-  }
-
-  /** @brief The neighborhood of a vertex n lies between [ `offsets_[n]`, `offsets_[n + 1]` )
-             Stimulate the mem hierarchy with a cpu core LOAD operations for the \b lower bound.
-  */
-  MonitoredMemAccess begin() {
-    load(reinterpret_cast<uint64_t>(offsets_[n_]));
-    return MonitoredMemAccess(n_, offsets_);
-  }
-
-  /** @brief The neighborhood of a vertex n lies between [ `offsets_[n]`, `offsets_[n + 1]` )
-             Stimulate the mem hierarchy with a cpu core LOAD operations for the \b upper bound.
-  */
-  MonitoredMemAccess end() {
-    load(reinterpret_cast<uint64_t>(offsets_[n_ + 1]));
-    return MonitoredMemAccess(n_, offsets_, static_cast<size_t>(offsets_[n_ + 1] - offsets_[n_]));
-  }
-
-  /** @brief Overload of the dereference operator for a neighborhood iterator.
-             Stimulate the mem hierarchy with a cpu core LOAD operation.
-   */
-  NodeID operator*() {
-    load(reinterpret_cast<uint64_t>(index_));
-    return *index_;
-  }
-};
 
 template <class NodeID_, class DestID_ = NodeID_, bool MakeInverse = true>
 class CSRGraph {
+  // Used for *non-negative* offsets within a neighborhood
+  typedef std::make_unsigned<std::ptrdiff_t>::type OffsetT;
+
+  // Used to access neighbors of vertex, basically sugar for iterators
+  class Neighborhood {
+    NodeID_ n_;
+    DestID_** g_index_;
+    OffsetT start_offset_;
+   public:
+    Neighborhood(NodeID_ n, DestID_** g_index, OffsetT start_offset) :
+        n_(n), g_index_(g_index), start_offset_(0) {
+      OffsetT max_offset = end() - begin();
+      start_offset_ = std::min(start_offset, max_offset);
+    }
+    typedef DestID_* iterator;
+    iterator begin() { return g_index_[n_] + start_offset_; }
+    iterator end()   { return g_index_[n_+1]; }
+  };
 
   void ReleaseResources() {
     if (out_index_ != nullptr)
@@ -185,6 +128,7 @@ class CSRGraph {
         delete[] in_neighbors_;
     }
   }
+
 
  public:
   CSRGraph() : directed_(false), num_nodes_(0), num_edges_(0),
@@ -267,13 +211,13 @@ class CSRGraph {
     return in_index_[v+1] - in_index_[v];
   }
 
-  MonitoredMemAccess out_neigh(NodeID_ n, size_t start_offset = 0) const {
-    return MonitoredMemAccess(n, out_index_, start_offset);
+  Neighborhood out_neigh(NodeID_ n, OffsetT start_offset = 0) const {
+    return Neighborhood(n, out_index_, start_offset);
   }
 
-  MonitoredMemAccess in_neigh(NodeID_ n, size_t start_offset = 0) const {
+  Neighborhood in_neigh(NodeID_ n, OffsetT start_offset = 0) const {
     static_assert(MakeInverse, "Graph inversion disabled but reading inverse");
-    return MonitoredMemAccess(n, in_index_, start_offset);
+    return Neighborhood(n, in_index_, start_offset);
   }
 
   void PrintStats() const {

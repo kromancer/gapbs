@@ -14,11 +14,11 @@
 #include "timer.h"
 #include "types.h"
 
-#include "champsim_adapter.h"
+#include "ChampSimGraph.h"
 
 using namespace std;
 
-pvector<NodeID> DOBFS(const Graph &g, NodeID source) {
+pvector<NodeID> DOBFS(const ChampSimGraph &g, NodeID source) {
 
   initializeL1DCache();
 
@@ -32,7 +32,7 @@ pvector<NodeID> DOBFS(const Graph &g, NodeID source) {
 
   while (!frontier.empty()) {
     auto u = frontier.front(); frontier.pop();
-    for (auto v : g.out_neigh(u)) {
+    for (auto v : g.out_neigh_with_cache_monitoring(u)) {
       if (parent[v] == INVALID_NODE_ID) {
         parent[v] = u;
         frontier.push(v);
@@ -84,10 +84,10 @@ int main(int argc, char *argv[]) {
     return -1;
 
   Builder b(cli);
-  Graph g = b.MakeGraph();
+  ChampSimGraph g = b.MakeGraph();
 
   SourcePicker<Graph> sp(g, cli.start_vertex());
-  auto BFSBound = [&sp](const Graph &g_) { return DOBFS(g_, sp.PickNext()); };
+  auto BFSBound = [&sp](const ChampSimGraph &g_) { return DOBFS(g_, sp.PickNext()); };
 
   SourcePicker<Graph> vsp(g, cli.start_vertex());
   auto VerifierBound = [&vsp](const Graph &g_, const pvector<NodeID> &parent) {
