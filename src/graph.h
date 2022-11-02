@@ -262,6 +262,10 @@ class CSRGraph {
     return Range<NodeID_>(num_nodes());
   }
 
+  const DestID_* const * GetOffsets() const {
+    return out_index_;
+  }
+
  private:
   bool directed_;
   size_t num_nodes_;
