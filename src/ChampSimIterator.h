@@ -2,12 +2,13 @@
 #define CHAMPSIMITERATOR_H
 
 #include <cassert>
+#include <iostream>
 
 #include "champsim_adapter.h"
 #include "types.h"
 
 /** @brief Stimulates the memory hierarchy when accessing the offset and
- * neighbor arrays
+ *         neighbor arrays
  */
 class ChampSimIterator {
   typedef NodeID value_type;
@@ -56,21 +57,25 @@ public:
     return *this;
   }
 
-  /** @brief The neighborhood of a vertex n lies between [ `offsets_[n]`,
-     `offsets_[n + 1]` ) Stimulate the mem hierarchy with a cpu core LOAD
-     operations for the \b lower bound.
+  /** @brief The neighborhood of a vertex n lies between:
+      [ `offsets_[n]`, `offsets_[n + 1]` )
+      Stimulate the mem hierarchy with a cpu core LOAD
+      operations for the \b lower bound.
   */
   ChampSimIterator begin() {
-    load(reinterpret_cast<uint64_t>(offsets_[n_]));
+    uint64_t addr = reinterpret_cast<uint64_t>(&offsets_[n_]);
+    load(addr);
     return ChampSimIterator(n_, offsets_);
   }
 
-  /** @brief The neighborhood of a vertex n lies between [ `offsets_[n]`,
-     `offsets_[n + 1]` ) Stimulate the mem hierarchy with a cpu core LOAD
-     operations for the \b upper bound.
+  /** @brief The neighborhood of a vertex n lies between:
+      [ `offsets_[n]`, `offsets_[n + 1]` )
+      Stimulate the mem hierarchy with a cpu core LOAD
+      operations for the \b upper bound.
   */
   ChampSimIterator end() {
-    load(reinterpret_cast<uint64_t>(offsets_[n_ + 1]));
+    uint64_t addr = reinterpret_cast<uint64_t>(&offsets_[n_ + 1]);
+    load(addr);
     return ChampSimIterator(
         n_, offsets_, static_cast<size_t>(offsets_[n_ + 1] - offsets_[n_]));
   }

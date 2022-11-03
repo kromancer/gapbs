@@ -5,7 +5,6 @@
 #include "benchmark.h"
 #include "bitmap.h"
 #include "builder.h"
-#include "champsim_adapter.h"
 #include "command_line.h"
 #include "graph.h"
 #include "platform_atomics.h"
@@ -14,13 +13,56 @@
 #include "timer.h"
 #include "types.h"
 
+#include "champsim_adapter.h"
 #include "ChampSimGraph.h"
+#include "PrefetchAddressGenerator.h"
 
 using namespace std;
 
+/** @brief Visits graph in BFS manner
+ */
+static PrefetchAddressGenerator PrefetchAddressGenerator(const ChampSimGraph &g, NodeID source) {
+
+  // TODO: We are not monitoring frontier accesses
+  queue<NodeID> frontier;
+  frontier.push(source);
+
+  // TODO: We are not monitoring parent accesses
+  pvector<NodeID> parent(g.num_nodes(), INVALID_NODE_ID);
+  parent[source] = source;
+
+  NodeID const * const *offsets = g.GetOffsets();
+
+  while (!frontier.empty()) {
+    auto u = frontier.front(); frontier.pop();
+
+    const NodeID *start = offsets[u];
+    co_yield reinterpret_cast<uint64_t>(&offsets[u]);
+
+    const NodeID *end = offsets[u + 1];
+    co_yield reinterpret_cast<uint64_t>(&offsets[u + 1]);
+
+    for (NodeID v = *start; start < end; start++) {
+      co_yield reinterpret_cast<uint64_t>(start);
+      if (parent[v] == INVALID_NODE_ID) {
+        parent[v] = u;
+        frontier.push(v);
+      }
+    }
+
+  }
+
+  co_return;
+}
+
+/** @brief The benchmark: Constructs a BFS tree of the given graph from the given source
+ */
 pvector<NodeID> DOBFS(const ChampSimGraph &g, NodeID source) {
 
-  initializeL1DCache();
+  // Notice the memory system hierarchy takes in
+  // a "prefetching" schedule
+  auto gen = PrefetchAddressGenerator(g, source);
+  initChampSim(gen);
 
   // TODO: We are not monitoring frontier accesses
   queue<NodeID> frontier;
@@ -40,7 +82,7 @@ pvector<NodeID> DOBFS(const ChampSimGraph &g, NodeID source) {
     }
   }
 
-  deinitL1DCache();
+  deinitChampSim();
   printCacheStats();
 
   return parent;

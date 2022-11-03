@@ -3,8 +3,15 @@
 
 #include <cstdint>
 
-void initializeL1DCache();
-void deinitL1DCache();
+#include "erebus.h"
+#include "PrefetchAddressGenerator.h"
+
+/** @brief Initialize ChampSim which is used for the memory hierarchy simulation.
+    @param gen - A cache line address generator.
+ */
+void initChampSim(PrefetchAddressGenerator &gen);
+
+void deinitChampSim();
 void load(uint64_t addr);
 void printCacheStats();
 

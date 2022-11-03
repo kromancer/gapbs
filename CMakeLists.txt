@@ -20,7 +20,7 @@ target_compile_definitions(pref_no PRIVATE -Dprefetcher_initialize=pref_pprefetc
 
 add_library(pref_erebus ChampSim/prefetcher/erebus/erebus.cc)
 target_compile_options(pref_erebus PRIVATE "-ggdb3" "-O0")
-target_include_directories(pref_erebus PRIVATE ChampSim/inc)
+target_include_directories(pref_erebus PRIVATE ChampSim/inc PUBLIC ChampSim/prefetcher/erebus)
 target_compile_definitions(pref_erebus PRIVATE -Dprefetcher_initialize=pref_pprefetcherDerebus_initialize -Dprefetcher_cache_operate=pref_pprefetcherDerebus_cache_operate -Dprefetcher_cache_fill=pref_pprefetcherDerebus_cache_fill -Dprefetcher_cycle_operate=pref_pprefetcherDerebus_cycle_operate -Dprefetcher_final_stats=pref_pprefetcherDerebus_final_stats -Dl1d_prefetcher_initialize=pref_pprefetcherDerebus_initialize -Dl1d_prefetcher_operate=pref_pprefetcherDerebus_cache_operate -Dl1d_prefetcher_cache_fill=pref_pprefetcherDerebus_cache_fill -Dl1d_prefetcher_final_stats=pref_pprefetcherDerebus_final_stats)
 
 add_executable(naive_bfs src/naive_bfs.cc src/champsim_adapter.cc ChampSim/src/dram_controller.cc ChampSim/src/ptw.cc ChampSim/src/core_inst.cc ChampSim/src/cache.cc ChampSim/src/ooo_cpu.cc ChampSim/src/vmem.cc ChampSim/replacement/lru/lru.cc ChampSim/branch/bimodal/bimodal.cc ChampSim/btb/basic_btb/basic_btb.cc)
